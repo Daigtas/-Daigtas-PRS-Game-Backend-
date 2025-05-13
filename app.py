@@ -179,7 +179,7 @@ def update_highscore():
             user['highscore'] = new_score
         return jsonify({'message': 'Highscore updated'})
     else:
-        user = User.query.get(user_id)
+        user = db.session.get(User, user_id)
         if user and new_score > user.highscore:
             user.highscore = new_score
             db.session.commit()
