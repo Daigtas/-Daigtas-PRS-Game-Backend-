@@ -10,8 +10,8 @@ app = Flask(__name__)
 CORS(app,
      origins=["https://game.sandboxas.lt"],
      supports_credentials=True,
-     methods=["POST", "OPTIONS"],
-     allow_headers=["Content-Type"])
+     methods=["GET", "POST", "OPTIONS"],
+     allow_headers=["Content-Type", "Authorization", "X-Requested-With", "Credentials"])
 
 app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'sqlite:///local_game.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
@@ -75,10 +75,9 @@ def register():
 @try_db_operation
 def login():
     if request.method == 'OPTIONS':
-        # Handle preflight request
         response = jsonify({'message': 'Preflight accepted'})
         response.headers.add('Access-Control-Allow-Origin', 'https://game.sandboxas.lt')
-        response.headers.add('Access-Control-Allow-Headers', 'Content-Type')
+        response.headers.add('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Credentials')
         response.headers.add('Access-Control-Allow-Methods', 'POST, OPTIONS')
         response.headers.add('Access-Control-Allow-Credentials', 'true')
         return response
