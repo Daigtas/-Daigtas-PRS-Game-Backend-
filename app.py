@@ -10,8 +10,10 @@ app = Flask(__name__)
 CORS(app,
      origins=["https://game.sandboxas.lt"],
      supports_credentials=True,
-     methods=["GET", "POST", "OPTIONS"],
-     allow_headers=["Content-Type", "Authorization", "X-Requested-With", "Credentials"])
+     methods=["GET", "POST", "OPTIONS", "DELETE", "PUT", "PATCH"],
+     allow_headers=["Content-Type", "Authorization", "X-Requested-With", "Credentials"],
+     expose_headers=["Content-Type", "Authorization"],
+     max_age=600)
 
 app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'sqlite:///local_game.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
@@ -125,6 +127,37 @@ def get_game_history(user_id):
         'laimetojas': g.laimetojas
     } for g in history])
 
+@app.route('/game_history/batch', methods=['POST', 'OPTIONS'])
+@try_db_operation
+def batch_game_history():
+    if request.method == 'OPTIONS':
+        response = jsonify({'message': 'Preflight accepted'})
+        response.headers.add('Access-Control-Allow-Origin', 'https://game.sandboxas.lt')
+        response.headers.add('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Credentials')
+        response.headers.add('Access-Control-Allow-Methods', 'POST, OPTIONS')
+        response.headers.add('Access-Control-Allow-Credentials', 'true')
+        return response
+        
+    data = request.get_json()
+    history_entries = data.get('entries', [])
+    
+    for entry in history_entries:
+        user_id = entry.get('user_id')
+        zaidimas = entry.get('zaidimas')
+        pc = entry.get('pc')
+        laimetojas = entry.get('laimetojas')
+        
+        game = GameHistory(
+            user_id=user_id,
+            zaidimas=zaidimas,
+            pc=pc,
+            laimetojas=laimetojas
+        )
+        db.session.add(game)
+    
+    db.session.commit()
+    return jsonify({'message': 'Game history batch added'}), 201
+
 @app.route('/scoreboard', methods=['GET'])
 @try_db_operation
 def get_scoreboard():
@@ -147,7 +180,33 @@ def update_highscore():
         db.session.commit()
     return jsonify({'message': 'Highscore updated'})
 
+@app.route('/user/<int:user_id>', methods=['GET', 'OPTIONS'])
+@try_db_operation
+def get_user(user_id):
+    if request.method == 'OPTIONS':
+        response = jsonify({'message': 'Preflight accepted'})
+        response.headers.add('Access-Control-Allow-Origin', 'https://game.sandboxas.lt')
+        response.headers.add('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Credentials')
+        response.headers.add('Access-Control-Allow-Methods', 'GET, OPTIONS')
+        response.headers.add('Access-Control-Allow-Credentials', 'true')
+        return response
+    
+    user = db.session.get(User, user_id)
+    if not user:
+        return jsonify({'error': 'User not found'}), 404
+    
+    response = jsonify({
+        'id': user.id,
+        'username': user.username,
+        'highscore': user.highscore,
+        'created_at': user.created_at
+    })
+    response.headers.add('Access-Control-Allow-Origin', 'https://game.sandboxas.lt')
+    response.headers.add('Access-Control-Allow-Credentials', 'true')
+    return response
+
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
-    app.run(debug=False)
+    # Run with host='0.0.0.0' to make it accessible from outside
+    app.run(host='0.0.0.0', port=5000, debug=False)
