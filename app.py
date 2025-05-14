@@ -8,7 +8,7 @@ import functools
 
 app = Flask(__name__)
 CORS(app,
-     origins=["http://game.sandboxas.lt"],
+     origins=["https://game.sandboxas.lt"],
      supports_credentials=True,
      methods=["POST", "OPTIONS"],
      allow_headers=["Content-Type"])
@@ -77,7 +77,7 @@ def login():
     if request.method == 'OPTIONS':
         # Handle preflight request
         response = jsonify({'message': 'Preflight accepted'})
-        response.headers.add('Access-Control-Allow-Origin', 'http://game.sandboxas.lt')
+        response.headers.add('Access-Control-Allow-Origin', 'https://game.sandboxas.lt')
         response.headers.add('Access-Control-Allow-Headers', 'Content-Type')
         response.headers.add('Access-Control-Allow-Methods', 'POST, OPTIONS')
         response.headers.add('Access-Control-Allow-Credentials', 'true')
@@ -92,7 +92,7 @@ def login():
         return jsonify({'error': 'Invalid credentials'}), 401
     
     response = jsonify({'message': 'Login successful', 'user_id': user.id})
-    response.headers.add('Access-Control-Allow-Origin', 'http://game.sandboxas.lt')
+    response.headers.add('Access-Control-Allow-Origin', 'https://game.sandboxas.lt')
     response.headers.add('Access-Control-Allow-Credentials', 'true')
     return response
 
